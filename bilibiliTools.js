@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         查看B站视频剩余时间
+// @name         B站小工具
 // @version      0.1
-// @description  只支持有视频选集的视频
+// @description  自定义倍速、分p视频计算剩余时间
 // @author       xp
 // @match        https://www.bilibili.com/video/*
 // @icon         https://www.bilibili.com/favicon.ico
@@ -14,7 +14,9 @@ let config = {
   rateList: ['3.0','2.5','2.0','1.5','1.0','0.3'],
   //脚本启动时延
   startDelay: 10000,
-  shortDelay: 10, 
+  shortDelay: 10,
+  //是否全屏时显示事件
+  showTime: true,
 }
 
 let path = {
@@ -26,12 +28,17 @@ let path = {
   navMenuNew: "#app > div.video-container-v1 > div.fixed-nav > div",
   //视频进度数字
   onElapsedTime: "#bilibili-player > div > div > div.bpx-player-primary-area > div.bpx-player-video-area > div.bpx-player-control-wrap > div.bpx-player-control-entity > div.bpx-player-control-bottom > div.bpx-player-control-bottom-left > div.bpx-player-ctrl-btn.bpx-player-ctrl-time > div > span.bpx-player-ctrl-time-current",
-  onTotalTime: "#bilibili-player > div > div > div.bpx-player-primary-area > div.bpx-player-video-area > div.bpx-player-control-wrap > div.bpx-player-control-entity > div.bpx-player-control-bottom > div.bpx-player-control-bottom-left > div.bpx-player-ctrl-btn.bpx-player-ctrl-time > div > span.bpx-player-ctrl-time-duration",
   //倍速盒子
   playbackrateUl: "#bilibili-player > div > div > div.bpx-player-primary-area > div.bpx-player-video-area > div.bpx-player-control-wrap > div.bpx-player-control-entity > div.bpx-player-control-bottom > div.bpx-player-control-bottom-right > div.bpx-player-ctrl-btn.bpx-player-ctrl-playbackrate > ul",
   //剩余时间按钮
   remainingTimeNew: "#app > div.video-container-v1 > div.fixed-nav > div > div.item.goback.xp",
-  remainingTimeOld: "#app > div.v-wrap > div:nth-child(3) > div:nth-child(3)"
+  remainingTimeOld: "#app > div.v-wrap > div:nth-child(3) > div:nth-child(3)",
+  //显示当前时间节点父节点位置
+  showTimePNode: "#bilibili-player > div > div > div.bpx-player-primary-area > div.bpx-player-video-area > div.bpx-player-control-wrap > div.bpx-player-control-entity > div.bpx-player-control-bottom > div.bpx-player-control-bottom-left",
+}
+
+myInterval = {
+  timeInterval: '',
 }
 
 /**
@@ -83,12 +90,11 @@ function secToTime(s) {
  *  时间列表(单位秒)
  * onIndex: 当前播放视频的下标
  * onElapsedTime: 当前视频已播放时长
- * onTotalTime: 当前视频总时长
  */
 function getDurationList() {
   let onIndex = -1
   let durationList = []
-  // durationList = [..., onIndex, onElapsedTime, onTotalTime]
+  // durationList = [..., onIndex, onElapsedTime]
   const list = document.querySelector(path.curList).children;
   for(let i = 0; i < list.length; i++) {
     durationList.push(timeToSec(list[i].querySelector(".duration").textContent))
@@ -97,27 +103,27 @@ function getDurationList() {
   }
   durationList.push(onIndex)
   durationList.push(timeToSec(document.querySelector(path.onElapsedTime).textContent))
-  durationList.push(timeToSec(document.querySelector(path.onTotalTime).textContent))
   return durationList
 }
 
 
 /**
  * 计算剩余时间
+ * 与实际有几秒的误差
+ * 原因：B站视频选集列表中的时长与实际时长有差
  */
 function calRemainingTime() {
   let list = getDurationList()
-  let onIndex = list[list.length - 3]
-  let onElapsedTime = list[list.length - 2]
-  let onTotalTime = list[list.length - 1]
-  list = list.slice(0,-3)
+  let onIndex = list[list.length - 2]
+  let onElapsedTime = list[list.length - 1]
+  list = list.slice(0,-2)
   let elapsedTime = remainingTime = 0
   for(let i = 0; i < list.length; i++) {
     if(i < onIndex) {
       elapsedTime += list[i]
     } else if(i === onIndex) {
       elapsedTime += onElapsedTime
-      remainingTime = onTotalTime - onElapsedTime
+      remainingTime = list[onIndex] - onElapsedTime
     } else {
       remainingTime += list[i]
     }
@@ -147,9 +153,7 @@ function addButtonOld(pNode) {
   let btn = document.createElement("div")
   btn.classList.add("float-nav__btn--fixed")
   btn.innerHTML = "<span>剩余</span><span>时间</span>"
-  btn.style.bottom = "-6px"
-  btn.style.width = "45px"
-  btn.style.height = "45px"
+  btn.style.cssText="bottom: -6px; width: 45px; height: 45px;"
   pNode.appendChild(btn)
 }
 
@@ -182,9 +186,67 @@ function addRateSelect(rateList) {
     li.textContent = rateList[i] + "x"
     playbackrateUl.appendChild(li)
   }
-
 }
 
+function getTime() {
+  var dateObj = new Date();
+  //获取小时
+  var hour = dateObj.getHours();
+  //获取分钟
+  var minute = dateObj.getMinutes();
+  //获取秒钟
+  var second = dateObj.getSeconds();
+  if (hour < 10) {
+    hour = "0" + hour;
+  }
+  if (minute < 10) {
+    minute = "0" + minute;
+  }
+  if (second < 10) {
+    second = "0" + second;
+  }
+  
+  return hour + ":" + minute + ":" + second
+}
+
+function setTime() {
+  const timeNode = document.querySelector(path.showTimePNode).lastChild.firstChild.firstChild
+  timeNode.innerHTML = getTime()
+}
+
+function toggleTimeNode(flag) {
+  // flag为true添加， false删除
+  const showTimePNode = document.querySelector(path.showTimePNode)
+
+  if(flag) {
+    const div1 = document.createElement("div")
+    const div2 = document.createElement("div")
+    const span = document.createElement("span")
+    div1.classList = ["bpx-player-ctrl-btn bpx-player-ctrl-time"]
+    div2.classList.add("bpx-player-ctrl-time-label")
+    span.classList.add("bpx-player-ctrl-time-duration")
+    div2.appendChild(span)
+    div1.appendChild(div2)
+    myInterval.timeInterval = setInterval(setTime, 1000)
+    showTimePNode.appendChild(div1)
+    return 
+  }
+
+  const timeNode = showTimePNode.lastChild
+  showTimePNode.removeChild(timeNode)
+  clearInterval(myInterval.timeInterval)
+} 
+
+
+function showTimeFun() {
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+      toggleTimeNode(true);
+    } else {
+      toggleTimeNode(false);
+    }
+  });
+}
 
 function start() {
   addRateSelect(config.rateList)
@@ -195,7 +257,10 @@ function start() {
     } else {
       addButtonOld(document.querySelector(path.navMenuOld))
       document.querySelector(path.remainingTimeOld).addEventListener("click", () => Toast(calRemainingTime()[1]), 1000)
-    }  
+    }
+  }
+  if(config.showTime) {
+    showTimeFun()
   }
 }
 
@@ -205,7 +270,6 @@ function start() {
 
   const video = document.querySelector(path.video)
   function beforeStart() {
-    console.log("开始播放");
     start()
     video.removeEventListener("play",beforeStart)
   }
