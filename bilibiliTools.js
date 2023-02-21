@@ -15,7 +15,7 @@ let config = {
   //脚本启动时延
   startDelay: 10000,
   shortDelay: 10,
-  //是否全屏时显示事件
+  //全屏时显示时间
   showTime: true,
 }
 
@@ -161,12 +161,14 @@ function addButtonOld(pNode) {
 /**
  * 提示弹窗
  */
-function Toast(msg,duration){
+function Toast(msgArr,duration){
   duration=isNaN(duration)?3000:duration;
   var m = document.createElement('div');
-  m.innerHTML = msg;
-  m.style.cssText="font-size: .32rem;color: rgb(255, 255, 255);background-color: rgba(0, 0, 0, 0.6);padding: 10px 15px;margin: 0 0 0 -60px;border-radius: 4px;position: fixed;    top: 50%;left: 50%;width: 130px;text-align: center;";
+  m.innerHTML = msgArr[0] + " | " + msgArr[1];
+  console.log(m.innerHTML)
+  m.style.cssText="font-size: .32rem;color: rgb(255, 255, 255);background-color: rgba(0, 0, 0, 0.6);padding: 10px 15px;margin: 0 0 0 -60px;border-radius: 4px;position: fixed;    top: 50%;left: 50%;width: 110px;text-align: center; z-index: 100;";
   document.body.appendChild(m);
+  console.log(m)
   setTimeout(function() {
       var d = 0.5;
       m.style.opacity = '0';
@@ -253,10 +255,10 @@ function start() {
   if(document.querySelector(path.curList) != null) {
     if(document.querySelector(path.navMenuNew) != null) {
       addButtonNew(document.querySelector(path.navMenuNew))
-      document.querySelector(path.remainingTimeNew).addEventListener("click", () => Toast(calRemainingTime()[1]), 1000)
+      document.querySelector(path.remainingTimeNew).addEventListener("click", () => Toast(calRemainingTime()), 1000)
     } else {
       addButtonOld(document.querySelector(path.navMenuOld))
-      document.querySelector(path.remainingTimeOld).addEventListener("click", () => Toast(calRemainingTime()[1]), 1000)
+      document.querySelector(path.remainingTimeOld).addEventListener("click", () => Toast(calRemainingTime()), 1000)
     }
   }
   if(config.showTime) {

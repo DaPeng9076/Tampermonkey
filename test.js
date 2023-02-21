@@ -1,18 +1,15 @@
-var dateObj = new Date();
-//获取小时
-var hour = dateObj.getHours();
-//获取分钟
-var minute = dateObj.getMinutes();
-//获取秒钟
-var second = dateObj.getSeconds();
-if (hour < 10) {
-  hour = "0" + hour;
-}
-if (minute < 10) {
-  minute = "0" + minute;
-}
-if (second < 10) {
-  second = "0" + second;
+var arr = [10,21,[13,14,[25]],56,[47,[28,19,[15,16,[23]]]]]
+
+
+const fun = function(arr) {
+  arr.forEach(element => {
+    if(typeof element == "object") {
+      fun(element)
+    }
+    else {
+      console.log(element)
+    }
+  });
 }
 
-console.log(hour + ":" + minute + ":" + second);
+fun(arr)
