@@ -30,7 +30,10 @@ let path = {
   onElapsedTime: "#bilibili-player > div > div > div.bpx-player-primary-area > div.bpx-player-video-area > div.bpx-player-control-wrap > div.bpx-player-control-entity > div.bpx-player-control-bottom > div.bpx-player-control-bottom-left > div.bpx-player-ctrl-btn.bpx-player-ctrl-time > div > span.bpx-player-ctrl-time-current",
   //倍速盒子
   playbackrateUl: "#bilibili-player > div > div > div.bpx-player-primary-area > div.bpx-player-video-area > div.bpx-player-control-wrap > div.bpx-player-control-entity > div.bpx-player-control-bottom > div.bpx-player-control-bottom-right > div.bpx-player-ctrl-btn.bpx-player-ctrl-playbackrate > ul",
+  //剩余时间按钮父元素（新位置）
+  remainingTimeP: "#multi_page > div.head-con > div.head-left",
   //剩余时间按钮
+  remainingTime: "#multi_page > div.head-con > div.head-left > div:nth-child(4)",
   remainingTimeNew: "#app > div.video-container-v1 > div.fixed-nav > div > div.item.goback.xp",
   remainingTimeOld: "#app > div.v-wrap > div:nth-child(3) > div:nth-child(3)",
   //显示当前时间节点父节点位置
@@ -131,6 +134,18 @@ function calRemainingTime() {
 
   return [secToTime(elapsedTime), secToTime(remainingTime)]
 }
+
+
+/**
+ * 添加按钮（当navMenu不存在时）
+ */
+function addButton(pNode) {
+  let btn = document.createElement("div")
+  btn.innerHTML = '<i class="van-icon-general_viewmodule"></i><!---->'
+  btn.classList.add('range-box')
+  pNode.appendChild(btn)
+}
+
 
 /**
  * 添加按钮（新版B站）
@@ -256,9 +271,12 @@ function start() {
     if(document.querySelector(path.navMenuNew) != null) {
       addButtonNew(document.querySelector(path.navMenuNew))
       document.querySelector(path.remainingTimeNew).addEventListener("click", () => Toast(calRemainingTime()), 1000)
-    } else {
+    } else if (document.querySelector(path.navMenuOld) != null){
       addButtonOld(document.querySelector(path.navMenuOld))
       document.querySelector(path.remainingTimeOld).addEventListener("click", () => Toast(calRemainingTime()), 1000)
+    } else if (document.querySelector(path.remainingTimeP) != null){
+      addButton(document.querySelector(path.remainingTimeP))
+      document.querySelector(path.remainingTime).addEventListener("click", () => Toast(calRemainingTime()), 1000)
     }
   }
   if(config.showTime) {
